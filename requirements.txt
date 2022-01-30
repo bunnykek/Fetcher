@@ -1,0 +1,5 @@
+requests
+bs4
+lxml
+m3u8
+mutagen
