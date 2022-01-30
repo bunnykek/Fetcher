@@ -1,6 +1,6 @@
 ![fetcher](https://github.com/bunnykek/Apple-Music-Animated-Artwork-Fetcher/blob/main/assets/logo.svg "fetcher")
-
-# Features
+# Apple Music Animated Artwork Fetcher
+## Features
 
 - Downloads the animated artwork from Apple Music in Highest available (2160p HEVC) quality.
 - Can also multiplex the animated artwork with the most popular track of that album.
@@ -11,7 +11,7 @@
 
 
 
-# How to use?
+## How to use?
 
 Make sure you have [python](https://www.python.org/ "python") installed in your system.
 
