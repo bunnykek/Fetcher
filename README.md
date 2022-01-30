@@ -29,7 +29,6 @@ use 'pip3' in the below command if 'pip' doesn't work for you.
 pip install -r requirements.txt
 ```
 Use "py" or "python3" if  "python" doesn't  work for you.
-
 ```
 python fetcher.py
 ```
@@ -37,4 +36,12 @@ python fetcher.py
 The video will be saved in the same repo directory.
 
 
+## Some animated album links:
+```
+https://music.apple.com/us/album/evermore-deluxe-version/1547315522
+https://music.apple.com/us/album/positions-deluxe-edition/1553944254
+https://music.apple.com/us/album/after-hours-deluxe-video-album/1551901062
+https://music.apple.com/us/album/planet-her-deluxe/1574004234
+https://music.apple.com/us/album/folklore-deluxe-version/1528112358
+```
 ![cmd](https://github.com/bunnykek/Apple-Music-Animated-Artwork-Fetcher/blob/main/assets/2022-01-30%20Ak.png "cmd")
