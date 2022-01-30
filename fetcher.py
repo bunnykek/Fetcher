@@ -1,3 +1,6 @@
+#Made by bunny
+#My first project
+
 import requests
 import re
 import os
@@ -70,6 +73,19 @@ tracks = meta["trackCount"]
 copyright_ = meta["copyright"]
 release_date = meta["releaseDate"]
 genre = meta["primaryGenreName"]
+
+#showing general details
+metadata = f"""\n
+Album Name       : {album}
+Artist           : {artist}
+Rating           : {rating}
+Number of tracks : {tracks}
+Copyright        : {copyright_}
+Release date     : {release_date}
+Genre            : {genre}
+Album URL        : {album_url}
+"""
+print(metadata)
 
 
 #file name
