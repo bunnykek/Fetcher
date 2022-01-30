@@ -32,4 +32,4 @@ Use "py" or "python3" if  "python" doesn't  work for you.
 The video will be saved in the same repo directory.
 
 
-![cmd](https://github.com/c-bunny/Apple-Music-Animated-Artwork-Fetcher/blob/main/assets/2022-01-30%2035.png "cmd")
+![cmd](https://github.com/bunnykek/Apple-Music-Animated-Artwork-Fetcher/blob/main/assets/2022-01-30%20Ak.png "cmd")
