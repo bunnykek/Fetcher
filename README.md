@@ -1,4 +1,4 @@
-![fetcher](https://github.com/c-bunny/Apple-Music-Animated-Artwork-Fetcher/blob/main/assets/logo.svg "fetcher")
+![fetcher](https://github.com/bunnykek/Apple-Music-Animated-Artwork-Fetcher/blob/main/assets/logo.svg "fetcher")
 
 # Features
 
@@ -17,9 +17,11 @@ Make sure you have [python](https://www.python.org/ "python") installed in your 
 
 Download this repo and navigate into its directory or follow the below commands (install [git](https://git-scm.com/) first):
 
-`git clone https://github.com/c-bunny/Apple-Music-Animated-Artwork-Fetcher`
+`git clone https://github.com/bunnykek/Apple-Music-Animated-Artwork-Fetcher`
 
 `cd Apple-Music-Animated-Artwork-Fetcher`
+
+Download the ffmpeg binary(.exe for Windows) for your OS from [here](https://ffbinaries.com/downloads) and put that binary inside ``Apple-Music-Animated-Artwork-Fetcher`` folder
 
 use 'pip3' in the below command if 'pip' doesn't work for you. 
 
