@@ -38,11 +38,10 @@ def get_album_json(country, alb_id, token):
     return(response.json())
 
 def get_m3u8(json, atype):
-    if atype == 'T' or 't':
-        return(json['data'][0]['attributes']['editorialVideo']['motionDetailTall']['video'])
-    else:
-        return(json['data'][0]['attributes']['editorialVideo']['motionDetailSquare']['video'])
-
+    if atype == 'T' or atype == 't':
+      return(json['data'][0]['attributes']['editorialVideo']['motionDetailTall']['video'])
+    elif atype == 'S' or atype == 's':
+      return(json['data'][0]['attributes']['editorialVideo']['motionDetailSquare']['video'])
 
 def listall(json):
     totaltracks = int(json['data'][0]['attributes']['trackCount'])
