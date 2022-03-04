@@ -99,7 +99,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '-T', '--type', help="[tall,square] (square by default)",default='square' ,type=str)
     parser.add_argument(
-        '-L', '--loops', help="[int] Number of times you want to loop the artwork (0 by default)",default=0, type=int)
+        '-L', '--loops', help="[int] Number of times you want to loop the artwork (2 by default)",default=2, type=int)
     parser.add_argument(
         '-A', '--audio', help="Pass this flag if you also need the audio", action="store_true")
     parser.add_argument(
@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
     if(aud):
 
-        print("All the audio tracks:\n")
+        print("\nAll the audio tracks:\n")
         listall(album_json)
         index = int(input("\nSelect the audio track number : "))
         index = index - 1
