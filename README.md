@@ -2,7 +2,7 @@
 # Apple Music Animated Artwork Fetcher
 ## Features
 
-- Downloads the animated artwork from Apple Music in Highest available (2160p HEVC) quality.
+- Downloads the animated artwork from Apple Music in Highest available HEVC quality.
 - Can also multiplex the animated artwork with the track of your choice from that album.
 - Will also tag the artwork with all the metadata of the album.
 
