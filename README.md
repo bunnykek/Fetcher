@@ -44,7 +44,7 @@ options:
   -h, --help            show this help message and exit
   -T TYPE, --type TYPE  [tall,square] (square by default)
   -L LOOPS, --loops LOOPS
-                        [int] Number of times you want to loop the artwork (0 by default)
+                        [int] Number of times you want to loop the artwork (2 by default)
   -A, --audio           Pass this flag if you also need the audio
 ```
 Ex:
