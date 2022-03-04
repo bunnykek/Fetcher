@@ -30,10 +30,29 @@ pip install -r requirements.txt
 ```
 Use "py" or "python3" if  "python" doesn't  work for you.
 ```
-python fetcher.py
+python fetcher.py -h
+```
+```
+usage: fetcher.py [-h] [-T TYPE] [-L LOOPS] [-A] url
+
+Downloads animated cover artwork from Apple music.
+
+positional arguments:
+  url                   Album URL
+
+options:
+  -h, --help            show this help message and exit
+  -T TYPE, --type TYPE  [tall,square] (square by default)
+  -L LOOPS, --loops LOOPS
+                        [int] Number of times you want to loop the artwork (0 by default)
+  -A, --audio           Pass this flag if you also need the audio
+```
+Ex:
+``` 
+py fetcher.py -T tall -L 2 -A https://music.apple.com/us/album/planet-her-deluxe/1574004234
 ```
 
-The video will be saved in the same repo directory.
+The video will be saved in the ``Animated artworks`` folder.
 
 
 ## Some animated album links:
@@ -44,7 +63,7 @@ https://music.apple.com/us/album/after-hours-deluxe-video-album/1551901062
 https://music.apple.com/us/album/planet-her-deluxe/1574004234
 https://music.apple.com/us/album/folklore-deluxe-version/1528112358
 ```
-![cmd](https://i.imgur.com/3LJjpj8.png "cmd")
+![cmd](https://i.imgur.com/V2EtMyC.png "cmd")
 ```
 General
 Complete name                            : Taylor Swift - evermore (deluxe version) (2021).mp4
