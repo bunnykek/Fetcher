@@ -1,5 +1,6 @@
 # by bunny
 
+import colorama
 import requests
 import re
 import os
@@ -9,7 +10,11 @@ import sys
 import argparse
 from shutil import move
 from mutagen.mp4 import MP4
-
+from prettytable.colortable import ColorTable, Theme
+from sanitize_filename import sanitize as sanitize_filename
+import ffmpeg
+from colorama import Fore, Back
+colorama.init(autoreset=True)
 
 title = """
              /$$$$$$$$          /$$               /$$                          
@@ -23,6 +28,7 @@ title = """
                     Apple-Music animated cover artwork downloader                      
                                                                 -- by bunny  
     """
+
 
 def get_auth_token():
     #response = requests.get("https://k0ybdlmho9.execute-api.ap-northeast-1.amazonaws.com/prod/tokens/applemusic/generate")
@@ -54,11 +60,15 @@ def get_m3u8(json, atype):
 
 
 def listall(json):
+    table = ColorTable(theme=Theme(default_color='90'))
+    table.field_names = ["Track No.", "Name"]
+    table.align["Name"] = "l"
     totaltracks = int(json['data'][0]['attributes']['trackCount'])
     for i in range(totaltracks):
         if json['data'][0]['relationships']['tracks']['data'][i]['type'] == "songs":
             song = json['data'][0]['relationships']['tracks']['data'][i]['attributes']['name']
-            print(f" {i+1}. {song}")
+            table.add_row([i+1, song])
+    print(table)
 
 
 def remove_html_tags(text):
@@ -84,6 +94,18 @@ def check_token(tkn):
         raise ValueError(401)
 
 
+def print_table(json):
+    tmp = Theme(default_color='90')
+    table = ColorTable(theme=tmp)
+    table.field_names = ["ID", "Resolution", "Bitrate", "Codec", "FPS"]
+    for i in range(len(json['playlists'])):
+        if i == len(json['playlists'])-1:
+            pass
+        elif json['playlists'][i]['stream_info']['resolution'] == json['playlists'][i+1]['stream_info']['resolution']:
+            continue
+        table.add_row([i, json['playlists'][i]['stream_info']['resolution'], str(round((int(json['playlists'][i]['stream_info']['bandwidth']) /
+                      1000000), 2)) + " Mb/s", json['playlists'][i]['stream_info']['codecs'][0:4], json['playlists'][i]['stream_info']['frame_rate']])
+    print(table)
 
 
 if __name__ == "__main__":
@@ -94,20 +116,20 @@ if __name__ == "__main__":
     else:
         subprocess.call("clear")  # linux/mac
 
+    print(Fore.GREEN + title)
+
     parser = argparse.ArgumentParser(
         description="Downloads animated cover artwork from Apple music.")
     parser.add_argument(
-        '-T', '--type', help="[tall,square] (square by default)",default='square' ,type=str)
+        '-T', '--type', help="[tall,square] (square by default)", default='square', type=str)
     parser.add_argument(
-        '-L', '--loops', help="[int] Number of times you want to loop the artwork (2 by default)",default=2, type=int)
+        '-L', '--loops', help="[int] Number of times you want to loop the artwork (2 by default)", default=2, type=int)
     parser.add_argument(
         '-A', '--audio', help="Pass this flag if you also need the audio", action="store_true")
     parser.add_argument(
         'url', help="Album URL")
 
     args = parser.parse_args()
-    
-    print(title)
 
     token = get_auth_token()
     print("Checking if the token is still alive...")
@@ -118,12 +140,12 @@ if __name__ == "__main__":
         print("Dead token :/")
         sys.exit()
 
-    print("good!\n")
+    print(Back.GREEN + "good!")
 
-    url = args.url #input("Enter the Album URL : ")
-    artwork_type = args.type #input("Do you need the (T)aller or (S)quarer one : ")
-    rep = str(args.loops)  #input("Number of times you want to loop the artwork (recommended = 2)  : ")
-    aud = args.audio #input("Do you also need the audio in the artwork? [y/n] : ")
+    url = args.url
+    artwork_type = args.type
+    rep = str(args.loops)
+    aud = args.audio
 
     # extracting out the country and album ID
     country = re.search("/\D\D/", url).group().replace("/", "")
@@ -170,7 +192,7 @@ if __name__ == "__main__":
         pass
 
     # showing general details
-    metadata = f"""\n
+    metadata = f"""
         Album Name       : {album}
         Artist           : {artist}
         Rating           : {rating}
@@ -178,12 +200,11 @@ if __name__ == "__main__":
         Copyright        : {copyright_}
         Release date     : {release_date}
         Genre            : {genre}
-        URL              : {album_url}
     """
     print(metadata)
 
     # file name
-    fname = f"{artist} - {album} ({release_date[:4]}).mp4"
+    fname = sanitize_filename(f"{artist} - {album} ({release_date[:4]}).mp4")
     current_path = sys.path[0]
 
     try:
@@ -193,39 +214,52 @@ if __name__ == "__main__":
 
     video_path = os.path.join(current_path, "Animated artworks", fname)
 
-    # parsing the playlist and getting the max res hevc containing m3u8 file
     playlist = m3u8.load(m3u8_)
-    m3u8_ = playlist.data["playlists"][-1]['uri']
+    # print(playlist.data)
+    print_table(playlist.data)
+    playlist_id = int(input("Enter the ID: "))
+    m3u8_ = playlist.data["playlists"][playlist_id]['uri']
 
     # downloading video in mp4 container
     print("\nDownloading the video...")
-    subprocess.Popen(["ffmpeg", "-y", "-i", m3u8_, "-vcodec", "copy", "video.mp4"],
-                     stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).wait()
+
+    stream = ffmpeg.input(m3u8_)
+    stream = ffmpeg.output(stream, 'video.mp4', codec='copy').global_args(
+        '-loglevel', 'quiet', '-y')
+    ffmpeg.run(stream)
+    del stream
+
     print("Video downloaded.")
 
     # making the new looped video
-    subprocess.Popen(["ffmpeg", "-y", "-stream_loop", rep, "-i", "video.mp4", "-map_metadata", "0", "-fflags", "+bitexact", "-flags:v",
-                     "+bitexact", "-flags:a", "+bitexact", "-c", "copy", "fixed.mp4"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).wait()
+    stream = ffmpeg.input('video.mp4', stream_loop=rep)
+    stream = ffmpeg.output(stream, 'fixed.mp4', codec='copy').global_args(
+        '-loglevel', 'quiet', '-y')
+    ffmpeg.run(stream)
+    del stream
 
     if(aud):
 
-        print("\nAll the audio tracks:\n")
+        print("\nAudio tracks:")
         listall(album_json)
         index = int(input("\nSelect the audio track number : "))
         index = index - 1
 
         m4a = album_json['data'][0]['relationships']['tracks']['data'][index]['attributes']['previews'][0]['url']
-
-        # downloading the selected m4a track
+        # downloading the selected m4a track using requests
         print("\nDownloading the audio...")
-        subprocess.Popen(["ffmpeg", "-y", "-i", m4a, "-acodec", "copy", "audio.m4a"],
-                         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).wait()
+        r = requests.get(m4a, allow_redirects=True)
+        open('audio.m4a', 'wb').write(r.content)
+
         print("Audio downloaded.")
 
         # multiplexing
         print("\nMultiplexing...")
-        subprocess.Popen(["ffmpeg", "-y", "-i", "fixed.mp4", "-i", "audio.m4a", "-map_metadata", "0", "-fflags", "+bitexact", "-flags:v", "+bitexact",
-                         "-flags:a", "+bitexact", "-c", "copy", "-shortest", video_path], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).wait()
+        # multiplex audio and video using ffmpeg-python
+        stream_video = ffmpeg.input('fixed.mp4')
+        stream_audio = ffmpeg.input('audio.m4a')
+        ffmpeg.output(stream_video, stream_audio, video_path, codec='copy',
+                      shortest=None).global_args("-shortest", "-y", '-loglevel', 'quiet').run()
         print("Done.")
 
         os.remove("fixed.mp4")
@@ -243,8 +277,8 @@ if __name__ == "__main__":
     video["----:TXXX:Total tracks"] = bytes(str(tracks), 'UTF-8')
     video["----:TXXX:Release date"] = bytes(release_date, 'UTF-8')
     video["----:TXXX:UPC"] = bytes(upc, 'UTF-8')
-    if rating != '':
-        video["----:TXXX:Content Advisory"] = bytes(rating, 'UTF-8')
+    video["----:TXXX:Content Advisory"] = bytes(
+        'Explicit' if rating != '' else 'Clean', 'UTF-8')
     if copyright_ != '':
         video["cprt"] = copyright_
     if record_label != '':
@@ -254,6 +288,7 @@ if __name__ == "__main__":
     if editorial_notes != '':
         video["----:TXXX:Editorial notes"] = bytes(
             remove_html_tags(editorial_notes), 'UTF-8')
+    video.pop("©too")
     video.save()
     print("Done.")
 
