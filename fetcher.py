@@ -16,6 +16,8 @@ import ffmpeg
 from colorama import Fore, Back
 colorama.init(autoreset=True)
 
+Regx = re.compile(r"apple\.com\/(\w\w)\/(playlist|album)\/.+\/(\d+|pl\..+)")
+
 title = """
              /$$$$$$$$          /$$               /$$                          
             | $$_____/         | $$              | $$                          
@@ -36,27 +38,41 @@ def get_auth_token():
     return('eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjQ0OTQ5MzI0LCJleHAiOjE2NjA1MDEzMjR9.3RUn173ddFRpam0ksOFS-vJFR-wCtJHzcSdGr7exxFQScWxzQxHGht4wyt6iJQqNcEOR4BRmv6O4-2B4jzrGsQ')
 
 
-def get_album_json(country, alb_id, token):
+def get_json(country, _id, token, kind):
 
     headers = {
+        'origin': 'https://music.apple.com',
         'authorization': f'Bearer {token}'
     }
 
-    params = (
-        ('filter[equivalents]', f'{alb_id}'),
-        ('extend', 'offers,editorialVideo'),
+    album_params = (
+        ('filter[equivalents]', f'{_id}'),
+        ('extend', 'editorialVideo'),
     )
 
-    response = requests.get(
-        f'https://amp-api.music.apple.com/v1/catalog/{country}/albums', headers=headers, params=params)
+    playlist_params = {
+        'extend': 'editorialVideo'
+    }
+
+    if kind == 'album':
+        response = requests.get(
+            f'https://amp-api.music.apple.com/v1/catalog/{country}/albums', headers=headers, params=album_params)
+    elif kind == 'playlist':
+        response = requests.get(
+            f'https://amp-api.music.apple.com/v1/catalog/{country}/playlists/{_id}', headers=headers, params=playlist_params)
     return(response.json())
+
 
 
 def get_m3u8(json, atype):
     if atype == 'tall':
         return(json['data'][0]['attributes']['editorialVideo']['motionDetailTall']['video'])
     elif atype == 'square':
-        return(json['data'][0]['attributes']['editorialVideo']['motionDetailSquare']['video'])
+        try:
+            return(json['data'][0]['attributes']['editorialVideo']['motionDetailSquare']['video'])
+        except:
+            return(json['data'][0]['attributes']['editorialVideo']['motionSquareVideo1x1']['video'])
+
 
 
 def listall(json):
@@ -123,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '-T', '--type', help="[tall,square] (square by default)", default='square', type=str)
     parser.add_argument(
-        '-L', '--loops', help="[int] Number of times you want to loop the artwork (2 by default)", default=2, type=int)
+        '-L', '--loops', help="[int] Number of times you want to loop the artwork (No loops by default)", default=0, type=int)
     parser.add_argument(
         '-A', '--audio', help="Pass this flag if you also need the audio", action="store_true")
     parser.add_argument(
@@ -148,10 +164,16 @@ if __name__ == "__main__":
     aud = args.audio
 
     # extracting out the country and album ID
-    country = re.search("/\D\D/", url).group().replace("/", "")
-    id_ = re.search("\d+", url).group()
+    result = Regx.search(url)
+    if result is None:
+        print(Fore.RED + "Invalid URL")
+        sys.exit()
+    country = result.group(1)
+    kind = result.group(2)
+    id_ = result.group(3)
 
-    album_json = get_album_json(country, id_, token)
+    # getting the json response
+    album_json = get_json(country, id_, token, kind)
 
     # extracting the master m3u8 from album_json
     m3u8_ = get_m3u8(album_json, artwork_type)
@@ -159,52 +181,60 @@ if __name__ == "__main__":
     # metadata crap
     meta = album_json['data'][0]['attributes']
 
-    album = meta["name"]
-    artist = meta["artistName"]
-    album_url = meta["url"]
-    tracks = meta["trackCount"]
-    release_date = meta["releaseDate"]
-    upc = meta['upc']
-    copyright_ = ''
-    record_label = ''
-    genre = ''
-    rating = ''
-    editorial_notes = ''
-    try:
-        copyright_ = meta["copyright"]
-    except:
-        pass
-    try:
-        record_label = meta['recordLabel']
-    except:
-        pass
-    try:
-        genre = meta["genreNames"][0]
-    except:
-        pass
-    try:
-        rating = meta["contentRating"]
-    except:
-        pass
-    try:
-        editorial_notes = meta['editorialNotes']['standard']
-    except:
-        pass
+    if kind == 'album':
+        album = meta["name"]
+        artist = meta["artistName"]
+        album_url = meta["url"]
+        tracks = meta["trackCount"]
+        release_date = meta["releaseDate"]
+        upc = meta['upc']
+        copyright_ = ''
+        record_label = ''
+        genre = ''
+        rating = ''
+        editorial_notes = ''
+        try:
+            copyright_ = meta["copyright"]
+        except:
+            pass
+        try:
+            record_label = meta['recordLabel']
+        except:
+            pass
+        try:
+            genre = meta["genreNames"][0]
+        except:
+            pass
+        try:
+            rating = meta["contentRating"]
+        except:
+            pass
+        try:
+            editorial_notes = meta['editorialNotes']['standard']
+        except:
+            pass
 
-    # showing general details
-    metadata = f"""
-        Album Name       : {album}
-        Artist           : {artist}
-        Rating           : {rating}
-        Number of tracks : {tracks}
-        Copyright        : {copyright_}
-        Release date     : {release_date}
-        Genre            : {genre}
-    """
+        # showing general details
+        metadata = f"""
+            Album Name       : {album}
+            Artist           : {artist}
+            Rating           : {rating}
+            Number of tracks : {tracks}
+            Copyright        : {copyright_}
+            Release date     : {release_date}
+            Genre            : {genre}
+        """
+        fname = sanitize_filename(f"{artist} - {album} ({release_date[:4]}).mp4")
+
+    elif kind == 'playlist':
+        metadata = f"""
+            Playlist name    : {meta["name"]}
+            Curator name     : {meta["curatorName"]}
+            Modified date    : {meta["lastModifiedDate"]}
+        """
+        fname = sanitize_filename(f"{meta['name']} ({meta['lastModifiedDate'][:4]}).mp4")
+
     print(metadata)
-
-    # file name
-    fname = sanitize_filename(f"{artist} - {album} ({release_date[:4]}).mp4")
     current_path = sys.path[0]
 
     try:
@@ -238,7 +268,7 @@ if __name__ == "__main__":
     ffmpeg.run(stream)
     del stream
 
-    if(aud):
+    if aud and kind == 'album':
 
         print("\nAudio tracks:")
         listall(album_json)
@@ -271,23 +301,32 @@ if __name__ == "__main__":
     # tagging
     print("\nTagging metadata..")
     video = MP4(video_path)
-    video["\xa9alb"] = album
-    video["aART"] = artist
-    video["----:TXXX:URL"] = bytes(album_url, 'UTF-8')
-    video["----:TXXX:Total tracks"] = bytes(str(tracks), 'UTF-8')
-    video["----:TXXX:Release date"] = bytes(release_date, 'UTF-8')
-    video["----:TXXX:UPC"] = bytes(upc, 'UTF-8')
-    video["----:TXXX:Content Advisory"] = bytes(
-        'Explicit' if rating != '' else 'Clean', 'UTF-8')
-    if copyright_ != '':
-        video["cprt"] = copyright_
-    if record_label != '':
-        video["----:TXXX:Record label"] = bytes(record_label, 'UTF-8')
-    if genre != '':
-        video["\xa9gen"] = genre
-    if editorial_notes != '':
-        video["----:TXXX:Editorial notes"] = bytes(
-            remove_html_tags(editorial_notes), 'UTF-8')
+    if kind == 'album':
+        video["\xa9alb"] = album
+        video["aART"] = artist
+        video["----:TXXX:URL"] = bytes(album_url, 'UTF-8')
+        video["----:TXXX:Total tracks"] = bytes(str(tracks), 'UTF-8')
+        video["----:TXXX:Release date"] = bytes(release_date, 'UTF-8')
+        video["----:TXXX:UPC"] = bytes(upc, 'UTF-8')
+        video["----:TXXX:Content Advisory"] = bytes(
+            'Explicit' if rating != '' else 'Clean', 'UTF-8')
+        if copyright_ != '':
+            video["cprt"] = copyright_
+        if record_label != '':
+            video["----:TXXX:Record label"] = bytes(record_label, 'UTF-8')
+        if genre != '':
+            video["\xa9gen"] = genre
+        if editorial_notes != '':
+            video["----:TXXX:Editorial notes"] = bytes(
+                remove_html_tags(editorial_notes), 'UTF-8')
+    elif kind == 'playlist':
+        video["\xa9alb"] = meta["name"]
+        video["aART"] = meta["curatorName"]
+        video["----:TXXX:URL"] = bytes(meta["url"], 'UTF-8')
+        video["----:TXXX:Release date"] = bytes(meta["lastModifiedDate"], 'UTF-8')
+        if meta["editorialNotes"]['standard'] != '':
+            video["----:TXXX:Editorial notes"] = bytes(
+                remove_html_tags(meta["editorialNotes"]['standard']), 'UTF-8')
     video.pop("©too")
     video.save()
     print("Done.")
