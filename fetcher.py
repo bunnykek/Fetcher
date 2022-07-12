@@ -15,6 +15,7 @@ import ffmpeg
 from colorama import Fore, Back
 colorama.init(autoreset=True)
 
+TOKEN = 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjQ0OTQ5MzI0LCJleHAiOjE2NjA1MDEzMjR9.3RUn173ddFRpam0ksOFS-vJFR-wCtJHzcSdGr7exxFQScWxzQxHGht4wyt6iJQqNcEOR4BRmv6O4-2B4jzrGsQ'
 Regx = re.compile(r"apple\.com\/(\w\w)\/(playlist|album)\/.+\/(\d+|pl\..+)")
 
 title = """
@@ -32,9 +33,8 @@ title = """
 
 
 def get_auth_token():
-    #response = requests.get("https://k0ybdlmho9.execute-api.ap-northeast-1.amazonaws.com/prod/tokens/applemusic/generate")
-    # return(response.json()['token'])
-    return('eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjQ0OTQ5MzI0LCJleHAiOjE2NjA1MDEzMjR9.3RUn173ddFRpam0ksOFS-vJFR-wCtJHzcSdGr7exxFQScWxzQxHGht4wyt6iJQqNcEOR4BRmv6O4-2B4jzrGsQ')
+    response = requests.get("https://k0ybdlmho9.execute-api.ap-northeast-1.amazonaws.com/prod/tokens/applemusic/generate")
+    return response.json()['token']
 
 
 def get_json(country, _id, token, kind):
@@ -92,7 +92,10 @@ def remove_html_tags(text):
     return re.sub(clean, '', text)
 
 
-def check_token(tkn):
+def check_token(tkn=None):
+    if tkn is None:
+        tkn = TOKEN
+        
     headers = {
         'authorization': f'Bearer {tkn}'
     }
@@ -106,7 +109,8 @@ def check_token(tkn):
         'https://amp-api.music.apple.com/v1/catalog/in/albums', headers=headers, params=params)
 
     if response.status_code != 200:
-        raise ValueError(401)
+        return None
+    return tkn
 
 
 def print_table(json):
@@ -143,15 +147,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    token = get_auth_token()
-    print("Checking if the token is still alive...")
+    print("Checking if the static token is still alive...")
     # checking if the token is still alive
-    try:
-        check_token(token)
-    except Exception as e:
-        print("Dead token :/")
-        sys.exit()
-
+    token = check_token(TOKEN)
+    if token is None:
+        print(Back.RED + "Regenrating a new token.")
+        token = get_auth_token()
     print(Back.GREEN + "good!")
 
     url = args.url
