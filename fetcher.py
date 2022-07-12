@@ -4,18 +4,23 @@ import colorama
 import requests
 import re
 import os
-import subprocess
 import m3u8
 import sys
 import argparse
 from shutil import move
 from mutagen.mp4 import MP4
-from prettytable.colortable import ColorTable, Theme
+try:
+    from prettytable.colortable import ColorTable, Theme
+    _color = True
+except ImportError:
+    _color = False
+    from prettytable import PrettyTable
 from sanitize_filename import sanitize as sanitize_filename
 import ffmpeg
 from colorama import Fore, Back
 colorama.init(autoreset=True)
 
+TOKEN = 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjQ0OTQ5MzI0LCJleHAiOjE2NjA1MDEzMjR9.3RUn173ddFRpam0ksOFS-vJFR-wCtJHzcSdGr7exxFQScWxzQxHGht4wyt6iJQqNcEOR4BRmv6O4-2B4jzrGsQ'
 Regx = re.compile(r"apple\.com\/(\w\w)\/(playlist|album)\/.+\/(\d+|pl\..+)")
 
 title = """
@@ -33,9 +38,8 @@ title = """
 
 
 def get_auth_token():
-    #response = requests.get("https://k0ybdlmho9.execute-api.ap-northeast-1.amazonaws.com/prod/tokens/applemusic/generate")
-    # return(response.json()['token'])
-    return('eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjQ0OTQ5MzI0LCJleHAiOjE2NjA1MDEzMjR9.3RUn173ddFRpam0ksOFS-vJFR-wCtJHzcSdGr7exxFQScWxzQxHGht4wyt6iJQqNcEOR4BRmv6O4-2B4jzrGsQ')
+    response = requests.get("https://k0ybdlmho9.execute-api.ap-northeast-1.amazonaws.com/prod/tokens/applemusic/generate")
+    return response.json()['token']
 
 
 def get_json(country, _id, token, kind):
@@ -60,23 +64,25 @@ def get_json(country, _id, token, kind):
     elif kind == 'playlist':
         response = requests.get(
             f'https://amp-api.music.apple.com/v1/catalog/{country}/playlists/{_id}', headers=headers, params=playlist_params)
-    return(response.json())
+    return response.json()
 
 
 
 def get_m3u8(json, atype):
+    BASE = json['data'][0]['attributes']['editorialVideo']
+    
     if atype == 'tall':
-        return(json['data'][0]['attributes']['editorialVideo']['motionDetailTall']['video'])
+        return BASE['motionDetailTall']['video']
     elif atype == 'square':
         try:
-            return(json['data'][0]['attributes']['editorialVideo']['motionDetailSquare']['video'])
-        except:
-            return(json['data'][0]['attributes']['editorialVideo']['motionSquareVideo1x1']['video'])
+            return BASE['motionDetailSquare']['video']
+        except KeyError:
+            return BASE['motionSquareVideo1x1']['video']
 
 
 
 def listall(json):
-    table = ColorTable(theme=Theme(default_color='90'))
+    table = ColorTable(theme=Theme(default_color='90')) if _color else PrettyTable()
     table.field_names = ["Track No.", "Name"]
     table.align["Name"] = "l"
     totaltracks = int(json['data'][0]['attributes']['trackCount'])
@@ -93,7 +99,10 @@ def remove_html_tags(text):
     return re.sub(clean, '', text)
 
 
-def check_token(tkn):
+def check_token(tkn=None):
+    if tkn is None:
+        tkn = TOKEN
+
     headers = {
         'authorization': f'Bearer {tkn}'
     }
@@ -107,12 +116,13 @@ def check_token(tkn):
         'https://amp-api.music.apple.com/v1/catalog/in/albums', headers=headers, params=params)
 
     if response.status_code != 200:
-        raise ValueError(401)
+        return None
+    return tkn
 
 
 def print_table(json):
-    tmp = Theme(default_color='90')
-    table = ColorTable(theme=tmp)
+    tmp = Theme(default_color='90') if _color else None
+    table = ColorTable(theme=tmp) if _color else PrettyTable()
     table.field_names = ["ID", "Resolution", "Bitrate", "Codec", "FPS"]
     for i in range(len(json['playlists'])):
         if i == len(json['playlists'])-1:
@@ -127,10 +137,7 @@ def print_table(json):
 if __name__ == "__main__":
 
     # clean screen
-    if os.name == 'nt':
-        subprocess.call("cls", shell=True)  # windows
-    else:
-        subprocess.call("clear")  # linux/mac
+    os.system('cls' if os.name == 'nt' else 'clear')
 
     print(Fore.GREEN + title)
 
@@ -147,16 +154,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    token = get_auth_token()
-    print("Checking if the token is still alive...")
+    print("Checking if the static token is still alive...")
     # checking if the token is still alive
-    try:
-        check_token(token)
-    except Exception as e:
-        print("Dead token :/")
-        sys.exit()
-
-    print(Back.GREEN + "good!")
+    token = check_token(TOKEN)
+    if token is None:
+        print(Back.RED + "Regenerating a new token.")
+        token = get_auth_token()
+    print(Back.GREEN + "Token is valid!")
 
     url = args.url
     artwork_type = args.type
@@ -188,37 +192,21 @@ if __name__ == "__main__":
         tracks = meta["trackCount"]
         release_date = meta["releaseDate"]
         upc = meta['upc']
-        copyright_ = ''
-        record_label = ''
-        genre = ''
-        rating = ''
-        editorial_notes = ''
-        try:
-            copyright_ = meta["copyright"]
-        except:
-            pass
-        try:
-            record_label = meta['recordLabel']
-        except:
-            pass
+        copyright_ = meta.get("copyright")
+        record_label = meta.get('recordLabel')
         try:
             genre = meta["genreNames"][0]
-        except:
-            pass
-        try:
-            rating = meta["contentRating"]
-        except:
-            pass
-        try:
-            editorial_notes = meta['editorialNotes']['standard']
-        except:
-            pass
+        except (KeyError, TypeError):
+            genre = None
+        rating = meta.get("contentRating")
+        editorial_notes = meta.get('editorialNotes', {}).get('standard')
+
 
         # showing general details
         metadata = f"""
             Album Name       : {album}
             Artist           : {artist}
-            Rating           : {rating}
+            Rating           : {str(rating).title()}
             Number of tracks : {tracks}
             Copyright        : {copyright_}
             Release date     : {release_date}
@@ -237,10 +225,9 @@ if __name__ == "__main__":
     print(metadata)
     current_path = sys.path[0]
 
-    try:
-        os.makedirs(os.path.join(current_path, "Animated artworks"))
-    except:
-        pass
+    ANIMATED_PATH = os.path.join(current_path, "Animated artworks")
+    if not os.path.exists(ANIMATED_PATH):
+        os.makedirs(ANIMATED_PATH)
 
     video_path = os.path.join(current_path, "Animated artworks", fname)
 
@@ -310,15 +297,16 @@ if __name__ == "__main__":
         video["----:TXXX:UPC"] = bytes(upc, 'UTF-8')
         video["----:TXXX:Content Advisory"] = bytes(
             'Explicit' if rating != '' else 'Clean', 'UTF-8')
-        if copyright_ != '':
+        if copyright_ is not None:
             video["cprt"] = copyright_
-        if record_label != '':
+        if record_label is not None:
             video["----:TXXX:Record label"] = bytes(record_label, 'UTF-8')
-        if genre != '':
+        if genre is not None:
             video["\xa9gen"] = genre
-        if editorial_notes != '':
+        if editorial_notes is not None:
             video["----:TXXX:Editorial notes"] = bytes(
                 remove_html_tags(editorial_notes), 'UTF-8')
+
     elif kind == 'playlist':
         video["\xa9alb"] = meta["name"]
         video["aART"] = meta["curatorName"]
