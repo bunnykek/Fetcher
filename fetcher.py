@@ -4,7 +4,6 @@ import colorama
 import requests
 import re
 import os
-import subprocess
 import m3u8
 import sys
 import argparse
@@ -127,10 +126,7 @@ def print_table(json):
 if __name__ == "__main__":
 
     # clean screen
-    if os.name == 'nt':
-        subprocess.call("cls", shell=True)  # windows
-    else:
-        subprocess.call("clear")  # linux/mac
+    os.system('cls' if os.name == 'nt' else 'clear')
 
     print(Fore.GREEN + title)
 
