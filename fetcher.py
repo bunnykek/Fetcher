@@ -206,7 +206,7 @@ if __name__ == "__main__":
         metadata = f"""
             Album Name       : {album}
             Artist           : {artist}
-            Rating           : {rating}
+            Rating           : {str(rating).title()}
             Number of tracks : {tracks}
             Copyright        : {copyright_}
             Release date     : {release_date}
