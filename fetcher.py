@@ -95,7 +95,7 @@ def remove_html_tags(text):
 def check_token(tkn=None):
     if tkn is None:
         tkn = TOKEN
-        
+
     headers = {
         'authorization': f'Bearer {tkn}'
     }
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     if token is None:
         print(Back.RED + "Regenrating a new token.")
         token = get_auth_token()
-    print(Back.GREEN + "good!")
+    print(Back.GREEN + "Token is valid!")
 
     url = args.url
     artwork_type = args.type
