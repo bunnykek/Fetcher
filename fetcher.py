@@ -158,7 +158,7 @@ if __name__ == "__main__":
     # checking if the token is still alive
     token = check_token(TOKEN)
     if token is None:
-        print(Back.RED + "Regenrating a new token.")
+        print(Back.RED + "Regenerating a new token.")
         token = get_auth_token()
     print(Back.GREEN + "Token is valid!")
 
