@@ -20,7 +20,7 @@ import ffmpeg
 from colorama import Fore, Back
 colorama.init(autoreset=True)
 
-TOKEN = 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjQ0OTQ5MzI0LCJleHAiOjE2NjA1MDEzMjR9.3RUn173ddFRpam0ksOFS-vJFR-wCtJHzcSdGr7exxFQScWxzQxHGht4wyt6iJQqNcEOR4BRmv6O4-2B4jzrGsQ'
+TOKEN = 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjU3NTk2NjY4LCJleHAiOjE2NzMxNDg2NjgsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.D3lSHZi212e7PWV_6tI8IAtkN7KQr1C1ZdcYY2vwdzHf0u5bt2tm1wtYYH87to3S-AAoz0rtANsPUsvDtG_ShA'
 Regx = re.compile(r"apple\.com\/(\w\w)\/(playlist|album)\/.+\/(\d+|pl\..+)")
 
 title = """
@@ -38,8 +38,8 @@ title = """
 
 
 def get_auth_token():
-    response = requests.get("https://k0ybdlmho9.execute-api.ap-northeast-1.amazonaws.com/prod/tokens/applemusic/generate")
-    return response.json()['token']
+    response = requests.get("https://music.apple.com/us/album/positions-deluxe-edition/1553944254")
+    return re.search(r"(eyJhbGc.+?)%22%7D", response.text).group(1)
 
 
 def get_json(country, _id, token, kind):
@@ -64,6 +64,7 @@ def get_json(country, _id, token, kind):
     elif kind == 'playlist':
         response = requests.get(
             f'https://amp-api.music.apple.com/v1/catalog/{country}/playlists/{_id}', headers=headers, params=playlist_params)
+
     return response.json()
 
 
@@ -104,7 +105,9 @@ def check_token(tkn=None):
         tkn = TOKEN
 
     headers = {
-        'authorization': f'Bearer {tkn}'
+        'authorization': f'Bearer {tkn}',
+        'origin': 'https://music.apple.com',
+
     }
 
     params = (
