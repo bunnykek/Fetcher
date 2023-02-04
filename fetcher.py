@@ -16,7 +16,7 @@ except ImportError:
     from prettytable import PrettyTable
 from sanitize_filename import sanitize as sanitize_filename
 
-TOKEN = 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjU3NTk2NjY4LCJleHAiOjE2NzMxNDg2NjgsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.D3lSHZi212e7PWV_6tI8IAtkN7KQr1C1ZdcYY2vwdzHf0u5bt2tm1wtYYH87to3S-AAoz0rtANsPUsvDtG_ShA'
+TOKEN = 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjc1MjAxMDY0LCJleHAiOjE2ODI0NTg2NjQsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.X6_jxCKuAndOhOL-hWPMPqwMiNJ6dWCau-FTP8AuXeHYCJLPueZDNSus_cdvqkKWPKyUD5FeTJwxwfvxezY0ow'
 Regx = re.compile(
     r"apple\.com\/(\w\w)\/(playlist|album|artist)\/.+\/(\d+|pl\..+)")
 
@@ -282,7 +282,7 @@ class Fetch:
         if response.status_code != 200:
             print("Token expired!\nUpdating the token...")
             response = self.session.get(
-                "https://music.apple.com/assets/index.3fae7e8c.js")
+                "https://music.apple.com/assets/index.919fe17f.js")
             result = re.search("\"(eyJ.+?)\"", response.text).group(1)
             self.session.headers.update({'authorization': f"Bearer {result}"})
             print("Token updated!")
