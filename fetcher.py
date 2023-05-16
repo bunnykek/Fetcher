@@ -275,16 +275,16 @@ class Fetch:
         return re.sub(clean, '', text)
 
     def check_token(self) -> None:
-
         response = self.session.get(
             'https://amp-api.music.apple.com/v1/catalog/in/albums/1551901062')
 
         if response.status_code != 200:
             print("Token expired!\nUpdating the token...")
-            response = self.session.get(
-                "https://music.apple.com/assets/index.919fe17f.js")
-            result = re.search("\"(eyJ.+?)\"", response.text).group(1)
-            self.session.headers.update({'authorization': f"Bearer {result}"})
+            response = self.session.get("https://music.apple.com/us/album/positions-deluxe-edition/1553944254")
+            jspath = re.search("crossorigin src=\"(/assets/index.+?\.js)\"", response.text).group(1)
+            response = self.session.get("https://music.apple.com"+jspath)
+            tkn = re.search(r"(eyJhbGc.+?)\"", response.text).group(1)
+            self.session.headers.update({'authorization': f"Bearer {tkn}"})
             print("Token updated!")
         else:
             print("Token is valid!")
