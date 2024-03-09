@@ -1,4 +1,4 @@
-# by bunny
+# by @bunnykek
 
 import subprocess
 import requests
@@ -16,23 +16,13 @@ except ImportError:
     from prettytable import PrettyTable
 from sanitize_filename import sanitize as sanitize_filename
 
-TOKEN = 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNjc1MjAxMDY0LCJleHAiOjE2ODI0NTg2NjQsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.X6_jxCKuAndOhOL-hWPMPqwMiNJ6dWCau-FTP8AuXeHYCJLPueZDNSus_cdvqkKWPKyUD5FeTJwxwfvxezY0ow'
-Regx = re.compile(
-    r"apple\.com\/(\w\w)\/(playlist|album|artist)\/.+\/(\d+|pl\..+)")
+if(not os.path.exists(os.path.join(os.getcwd(), "token.txt"))):
+    open(os.path.join(os.getcwd(), "token.txt"), "w+").close()
 
-title = """
-             /$$$$$$$$          /$$               /$$                          
-            | $$_____/         | $$              | $$                          
-            | $$     /$$$$$$  /$$$$$$    /$$$$$$$| $$$$$$$   /$$$$$$   /$$$$$$ 
-            | $$$$$ /$$__  $$|_  $$_/   /$$_____/| $$__  $$ /$$__  $$ /$$__  $$
-            | $$__/| $$$$$$$$  | $$    | $$      | $$  \ $$| $$$$$$$$| $$  \__/
-            | $$   | $$_____/  | $$ /$$| $$      | $$  | $$| $$_____/| $$      
-            | $$   |  $$$$$$$  |  $$$$/|  $$$$$$$| $$  | $$|  $$$$$$$| $$      
-            |__/    \_______/   \___/   \_______/|__/  |__/ \_______/|__/      
-                    Apple-Music animated cover artwork downloader                      
-                                                                -- by bunny  
-    """
+TOKEN = open(os.path.join(os.getcwd(), "token.txt")).read()
+Regx = re.compile(r"apple\.com\/(\w\w)\/(playlist|album|artist)\/.+\/(\d+|pl\..+)")
 
+title ="\r\n             /$$$$$$$$          /$$               /$$\r\n            | $$_____/         | $$              | $$\r\n            | $$     /$$$$$$  /$$$$$$    /$$$$$$$| $$$$$$$   /$$$$$$   /$$$$$$\r\n            | $$$$$ /$$__  $$|_  $$_/   /$$_____/| $$__  $$ /$$__  $$ /$$__  $$\r\n            | $$__/| $$$$$$$$  | $$    | $$      | $$  \\ $$| $$$$$$$$| $$  \\__/\r\n            | $$   | $$_____/  | $$ /$$| $$      | $$  | $$| $$_____/| $$\r\n            | $$   |  $$$$$$$  |  $$$$/|  $$$$$$$| $$  | $$|  $$$$$$$| $$\r\n            |__/    \\_______/   \\___/   \\_______/|__/  |__/ \\_______/|__/\r\n                    Apple-Music animated cover artwork downloader\r\n                                                                -- by bunny"
 
 class Fetch:
     def __init__(self) -> None:
@@ -69,9 +59,9 @@ class Fetch:
 
         if aud:
             self.processAudio(album_json, video_path)
-            os.remove("fixed.mp4")
+            os.remove(os.path.join(os.getcwd(), "fixed.mp4"))
         else:
-            move("fixed.mp4", video_path)
+            move(os.path.join(os.getcwd(), "fixed.mp4"), video_path)
 
         self.tagger(
             video_path=video_path,
@@ -88,7 +78,7 @@ class Fetch:
             editorial=meta.get('editorialNotes', {}).get('standard')
         )
 
-        os.remove("video.mp4")
+        os.remove(os.path.join(os.getcwd(), "video.mp4"))
 
     def playlist(self, id_, country, artwork_type, rep):
         playlist_json = self.get_json(id_, country, 'playlist')
@@ -99,7 +89,7 @@ class Fetch:
         video_path = os.path.join(os.getcwd(), "Animated artworks", fname)
 
         self.processVideo(m3u8_, rep)
-        move("fixed.mp4", video_path)
+        move(os.path.join(os.getcwd(), "fixed.mp4"), video_path)
         self.tagger(
             video_path=video_path,
             album=meta["name"],
@@ -108,7 +98,7 @@ class Fetch:
             release_date=meta["lastModifiedDate"],
             editorial=meta.get('editorialNotes', {}).get('standard')
         )
-        os.remove("video.mp4")
+        os.remove(os.path.join(os.getcwd(), "video.mp4"))
 
 
     def artist(self, id_, country, artwork_type):
@@ -118,8 +108,8 @@ class Fetch:
         fname = sanitize_filename(f"{meta['name']}.mp4")
         video_path = os.path.join(os.getcwd(), "Animated artworks", fname)
         self.processVideo(m3u8_, 0)
-        move("fixed.mp4", video_path)
-        os.remove("video.mp4")
+        move(os.path.join(os.getcwd(), "fixed.mp4"), video_path)
+        os.remove(os.path.join(os.getcwd(), "video.mp4"))
 
     def get_json(self, id_, country, kind):
 
@@ -165,13 +155,13 @@ class Fetch:
         m3u8_ = playlist.data["playlists"][playlist_id]['uri']
         print("\nDownloading the video...")
         subprocess.Popen(['ffmpeg', '-loglevel', 'quiet',
-                         '-y', '-i', m3u8_, '-c', 'copy', 'video.mp4']).wait()
+                         '-y', '-i', m3u8_, '-c', 'copy', os.path.join(os.getcwd(), "video.mp4")]).wait()
         print("Video downloaded.")
 
         # making the new looped video
         subprocess.Popen(['ffmpeg', '-loglevel', 'quiet',
                          '-y', '-stream_loop', str(rep), '-i',
-                          'video.mp4', '-c', 'copy', 'fixed.mp4']).wait()
+                          'video.mp4', '-c', 'copy', os.path.join(os.getcwd(), "fixed.mp4")]).wait()
 
     def listall(self, json):
         table = ColorTable(theme=Theme(default_color='90')
@@ -196,17 +186,17 @@ class Fetch:
         # downloading the selected m4a track using requests
         print("\nDownloading the audio...")
         r = self.session.get(m4a, allow_redirects=True)
-        open('audio.m4a', 'wb').write(r.content)
+        open(os.path.join(os.getcwd(), "audio.m4a"), 'wb').write(r.content)
 
         print("Audio downloaded.")
 
         # multiplexing
         print("\nMultiplexing...")
         # multiplex audio and video using ffmpeg-python
-        subprocess.Popen(['ffmpeg', '-loglevel', 'quiet', '-y', '-i', 'fixed.mp4',
-                         '-i', 'audio.m4a', '-c', 'copy', "-shortest", video_path]).wait()
+        subprocess.Popen(['ffmpeg', '-loglevel', 'quiet', '-y', '-i', os.path.join(os.getcwd(), "fixed.mp4"),
+                         '-i', os.path.join(os.getcwd(), "audio.m4a"), '-c', 'copy', "-shortest", video_path]).wait()
         print("Done.")
-        os.remove("audio.m4a")
+        os.remove(os.path.join(os.getcwd(), "audio.m4a"))
 
     def print_table(self, json):
         tmp = Theme(default_color='90') if _color else None
@@ -281,10 +271,11 @@ class Fetch:
         if response.status_code != 200:
             print("Token expired!\nUpdating the token...")
             response = self.session.get("https://music.apple.com/us/album/positions-deluxe-edition/1553944254")
-            jspath = re.search("crossorigin src=\"(/assets/index.+?\.js)\"", response.text).group(1)
+            jspath = re.search(r"crossorigin src=\"(/assets/index.+?\.js)\"", response.text).group(1)
             response = self.session.get("https://music.apple.com"+jspath)
             tkn = re.search(r"(eyJhbGc.+?)\"", response.text).group(1)
             self.session.headers.update({'authorization': f"Bearer {tkn}"})
+            open(os.path.join(os.getcwd(), "token.txt"), "w").write(tkn)
             print("Token updated!")
         else:
             print("Token is valid!")

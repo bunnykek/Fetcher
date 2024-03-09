@@ -4,4 +4,3 @@ mutagen
 colorama
 prettytable
 sanitize-filename
-ffmpeg-python
