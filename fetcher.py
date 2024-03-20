@@ -296,7 +296,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Downloads animated cover artwork from Apple music.")
     parser.add_argument(
-        '-T', '--type', help="[tall,square] (tall/rectangle by default)", default='tall', type=str)
+        '-T', '--type', help="[tall,square] (square by default)", default='square', type=str)
     parser.add_argument(
         '-L', '--loops', help="[int] Number of times you want to loop the artwork (No loops by default)", default=0, type=str)
     parser.add_argument(
