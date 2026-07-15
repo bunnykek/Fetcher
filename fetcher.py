@@ -1,5 +1,7 @@
 # by @bunnykek
 
+import base64
+import json
 import subprocess
 import requests
 import re
@@ -273,7 +275,22 @@ class Fetch:
             response = self.session.get("https://music.apple.com/us/album/positions-deluxe-edition/1553944254")
             jspath = re.search(r"crossorigin src=\"(/assets/index.+?\.js)\"", response.text).group(1)
             response = self.session.get("https://music.apple.com"+jspath)
-            tkn = re.search(r"(eyJhbGc.+?)\"", response.text).group(1)
+            jwts = re.findall(r"e[yw][A-Za-z0-9-_]+\.(?:e[yw][A-Za-z0-9-_]+)?\.[A-Za-z0-9-_]{2,}(?:(?:\.[A-Za-z0-9-_]{2,}){2})?", response.text)
+            tkn = None
+            for jwt in jwts:
+                try:
+                    header_segment = jwt.split('.')[0]
+                    padding = '=' * (-len(header_segment) % 4)
+                    header = json.loads(base64.urlsafe_b64decode((header_segment + padding).encode('utf-8')).decode('utf-8'))
+                    if header.get('kid') == 'WebPlayKid':
+                        tkn = jwt
+                        break
+                except (ValueError, json.JSONDecodeError, IndexError):
+                    continue
+
+            if tkn is None:
+                raise RuntimeError("No JWT with kid WebPlayKid was found")
+
             self.session.headers.update({'authorization': f"Bearer {tkn}"})
             open(os.path.join(os.getcwd(), "token.txt"), "w").write(tkn)
             print("Token updated!")
